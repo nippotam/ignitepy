@@ -2,7 +2,7 @@
 # install.sh — install the `ignitepy` command.
 #
 # Remote install (once the repo is public):
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USER/ignitepy/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/nippotam/ignitepy/main/install.sh | bash | bash
 #
 # Local install (from a clone of the repo):
 #   ./install.sh
@@ -14,12 +14,12 @@
 #
 # Environment variables:
 #   IGNITEPY_INSTALL_DIR  Where to install (default: ~/.local/bin)
-#   IGNITEPY_REPO         GitHub repo as user/name (default: YOUR_GITHUB_USER/ignitepy)
+#   IGNITEPY_REPO         GitHub repo as user/name (default: nippotam/ignitepy)
 #   IGNITEPY_BRANCH       Branch to download from (default: main)
 #   IGNITEPY_URL          Full URL of the script, overrides repo and branch
 set -euo pipefail
 
-REPO="${IGNITEPY_REPO:-YOUR_GITHUB_USER/ignitepy}"
+REPO="${IGNITEPY_REPO:-nippotam/ignitepy}"
 BRANCH="${IGNITEPY_BRANCH:-main}"
 DEST_DIR="${IGNITEPY_INSTALL_DIR:-$HOME/.local/bin}"
 URL="${IGNITEPY_URL:-https://raw.githubusercontent.com/$REPO/$BRANCH/ignitepy}"

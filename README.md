@@ -13,7 +13,7 @@ The setup follows the ideas from the Real Python article [How to Set Up a Python
 ## Install
 
 ```bash
-curl -fsSL https://raw.github.com/nippotam/ignitepy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nippotam/ignitepy/main/install.sh | bash
 ```
 
 Prefer to inspect it first? Clone the repo and run the installer:
@@ -96,7 +96,7 @@ The generated project includes one sample function and one test so everything pa
 Update by running the install command again. To remove `ignitepy`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USER/ignitepy/main/install.sh | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/nippotam/ignitepy/main/install.sh | bash -s -- --uninstall
 ```
 
 The `--uninstall` flag removes the command. It does not touch your `PATH` setting or any project you created.
