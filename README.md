@@ -13,13 +13,13 @@ The setup follows the ideas from the Real Python article [How to Set Up a Python
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USER/ignitepy/main/install.sh | bash
+curl -fsSL https://raw.github.com/nippotam/ignitepy/main/install.sh | bash
 ```
 
 Prefer to inspect it first? Clone the repo and run the installer:
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USER/ignitepy.git
+git clone https://github.com/nippotam/ignitepy.git
 cd ignitepy
 ./install.sh
 ```
