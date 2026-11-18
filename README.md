@@ -32,6 +32,8 @@ The installer copies `ignitepy` to `~/.local/bin`, adds that folder to your `PAT
 - [uv](https://docs.astral.sh/uv/#installation)
 - [git](https://git-scm.com/downloads)
 
+Tested on macOS 27.
+
 ## Usage
 
 ```bash
