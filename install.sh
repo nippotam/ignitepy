@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # install.sh — install the `ignitepy` command.
 #
-# Remote install (once the repo is public):
-#   curl -fsSL https://raw.githubusercontent.com/nippotam/ignitepy/main/install.sh | bash | bash
+# Remote install:
+#   curl -fsSL https://raw.githubusercontent.com/nippotam/ignitepy/main/install.sh | bash
 #
 # Local install (from a clone of the repo):
 #   ./install.sh
