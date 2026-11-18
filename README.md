@@ -123,6 +123,9 @@ The file isn't executable. Run `chmod +x ~/.local/bin/ignitepy`.
 **Python version not found**
 Install it with uv first, for example `uv python install 3.13`, then run `ignitepy` again.
 
+**`VIRTUAL_ENV` does not match the project environment**
+This warning means a different virtual environment is active in your shell than the project's `.venv`. Deactivate that environment with `deactivate`, then run project commands from the project directory with `uv run ...` (and `uv sync` first if needed). If you intentionally want to use the active environment instead, pass `--active` to `uv run`.
+
 **A `pyproject.toml` in a parent folder (for example in your home directory)**
 `ignitepy` detects this and makes the new project standalone, so the parent project doesn't interfere. You'll see a line saying it found a parent `pyproject.toml`.
 
