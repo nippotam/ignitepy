@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# ignitepy — scaffold a Python project that gives AI coding agents fast feedback.
+# Based on Real Python's "How to Set Up a Python Project for Agentic Coding":
+# https://realpython.com/python-project-for-agentic-coding/
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+ignitepy — set up a Python project for Claude Code and/or GitHub Copilot
+
+USAGE
+  ignitepy <name> [agent] [coverage] [pyversion]
+
+ARGUMENTS
+  name       Project name (letters, digits, - and _). Creates ./<name>/
+  agent      claude | copilot | both            (default: both)
+  coverage   Minimum test coverage in percent   (default: 90)
+  pyversion  Python version, e.g. 3.13          (default: uv's default; "-" to skip)
+
+EXAMPLES
+  ignitepy my-app
+  ignitepy my-app claude
+  ignitepy my-app copilot 85 3.13
+  ignitepy my-app both 90 -
+
+WHAT IT CREATES
+  uv project (src layout) + Git repo, Ruff, mypy (strict), pytest with a
+  coverage gate, pre-commit hooks, AGENTS.md, .env.example, and:
+    claude  -> CLAUDE.md (imports @AGENTS.md) + .claude/settings.json
+    copilot -> .github/copilot-instructions.md
+
+NOTES
+  Non-interactive when all arguments are given, so a coding agent can run it.
+  Requires: uv, git. Exit code is non-zero on any failure.
+EOF
+}
+
+die() { echo "ignitepy: error: $*" >&2; exit 1; }
+
+case "${1:-}" in -h|--help|help) usage; exit 0 ;; esac
+
+# --- Arguments (prompt for the name only if missing and a terminal is attached)
+name="${1:-}"
+if [ -z "$name" ]; then
+  if [ -t 0 ]; then read -r -p "Project name: " name; else usage >&2; exit 2; fi
+fi
+agent="${2:-both}"
+coverage="${3:-90}"
+pyversion="${4:--}"
+[ "$pyversion" = "-" ] && pyversion=""
+
+# --- Validation
+[[ "$name" =~ ^[A-Za-z][A-Za-z0-9_-]*$ ]] || die "invalid name '$name' (use letters, digits, - and _; start with a letter)"
+case "$agent" in claude|copilot|both) ;; *) die "agent must be claude, copilot or both (got '$agent')" ;; esac
+[[ "$coverage" =~ ^[0-9]+$ ]] && [ "$coverage" -le 100 ] || die "coverage must be an integer from 0 to 100 (got '$coverage')"
+[ -z "$pyversion" ] || [[ "$pyversion" =~ ^[0-9]+\.[0-9]+$ ]] || die "pyversion must look like 3.13 (got '$pyversion')"
+command -v uv >/dev/null  || die "uv not found. Install it: https://docs.astral.sh/uv/#installation"
+command -v git >/dev/null || die "git not found"
+[ ! -e "$name" ] || die "'$name' already exists in $(pwd)"
+
+echo "▶ Creating $name (agent=$agent, coverage=$coverage%, python=${pyversion:-default})"
+
+# --- Project scaffold
+uv init --no-workspace --package ${pyversion:+--python "$pyversion"} "$name"
+cd "$name"
+
+# If a parent folder holds a pyproject.toml (e.g. in your home directory), uv may
+# treat this project as one of its workspace members. Make the project its own
+# workspace root so it stays fully standalone.
+d="$(dirname "$PWD")"
+while [ "$d" != "/" ]; do
+  if [ -f "$d/pyproject.toml" ]; then
+    printf '\n# Standalone project: ignore any parent workspace\n[tool.uv.workspace]\nmembers = []\n' >> pyproject.toml
+    echo "ℹ Found $d/pyproject.toml, isolating the project from it"
+    break
+  fi
+  d="$(dirname "$d")"
+done
+
+# Pin the Python version inside the project so a stray .python-version or
+# pyproject.toml in a parent folder (e.g. your home directory) is never used
+if [ -n "$pyversion" ]; then
+  uv python pin "$pyversion"
+elif [ ! -f .python-version ]; then
+  uv python pin "$(sed -n 's/^requires-python = ">=\([0-9]*\.[0-9]*\).*/\1/p' pyproject.toml)"
+fi
+uv add --dev ruff mypy pytest pytest-cov pre-commit
+
+# Drop the generated CLI entry point; we replace main() with a testable function
+sed -i.bak '/^\[project.scripts\]/,/^$/d' pyproject.toml && rm pyproject.toml.bak
+pkg="$(basename "$(find src -mindepth 1 -maxdepth 1 -type d | head -n 1)")"
+
+cat > "src/$pkg/__init__.py" <<'EOF'
+def double(value: int) -> int:
+    return value * 2
+EOF
+
+mkdir -p tests
+cat > tests/test_main.py <<EOF
+from $pkg import double
+
+
+def test_double_returns_twice_the_input() -> None:
+    assert double(4) == 8
+EOF
+
+# --- Tool configuration
+cat >> pyproject.toml <<EOF
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Sort imports
+
+[tool.mypy]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=$coverage"
+EOF
+
+ruff_v="$(uv run ruff --version | cut -d' ' -f2)"
+mypy_v="$(uv run mypy --version | cut -d' ' -f2)"
+cat > .pre-commit-config.yaml <<EOF
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v$ruff_v
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v$mypy_v
+    hooks:
+      - id: mypy
+EOF
+
+# --- Agent instructions
+cat > AGENTS.md <<'EOF'
+# AGENTS.md
+
+## Development workflow
+
+- This project is typed. Run mypy after adding or modifying code:
+  - `uv run mypy .`
+- Use Ruff for formatting and linting:
+  - `uv run ruff format .`
+  - `uv run ruff check .`
+- Run the full test suite after modifying code:
+  - `uv run pytest`
+- Add or update tests when changing behavior.
+- Before committing, run:
+  - `uv run pre-commit run --all-files`
+- Prefer small, focused functions.
+
+## Documentation
+
+- Update documentation when public behavior changes.
+EOF
+
+if [ "$agent" != copilot ]; then
+  printf '@AGENTS.md\n' > CLAUDE.md
+  mkdir -p .claude
+  cat > .claude/settings.json <<'EOF'
+{
+  "permissions": {
+    "deny": ["Read(./.env)"]
+  }
+}
+EOF
+fi
+
+if [ "$agent" != claude ]; then
+  mkdir -p .github
+  cp AGENTS.md .github/copilot-instructions.md
+fi
+
+# --- Secrets
+printf '\n# Environment variables\n.env\n' >> .gitignore
+cat > .env.example <<'EOF'
+# Copy this file to .env and fill in the values your project needs.
+# .env is git-ignored, so real secrets never reach the repository.
+API_KEY=your-api-key-here
+EOF
+
+# --- Verify, install hooks, commit
+uv run ruff check --fix
+uv run ruff format
+uv run pre-commit install
+uv run pytest -q
+git add .
+git commit -qm "Initial agent-ready scaffold"
+
+echo "✅ $name is ready. Next: cd $name"
