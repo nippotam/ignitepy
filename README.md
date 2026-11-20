@@ -5,7 +5,7 @@ Set up a Python project for AI coding agents with a single command.
 `ignitepy` creates a ready-to-go Python project where Claude Code and GitHub Copilot get fast, automatic feedback: type checking, linting, formatting, tests and coverage. It also writes the instruction files each agent reads, so they know how to work in your project from the first prompt.
 
 ```bash
-ignitepy my-app claude 90 3.13
+ignitepy my-app claude 90 3.13      # naem of the app, claude only, 90% coverage, Python 3.13
 ```
 
 The setup follows the ideas from the Real Python article [How to Set Up a Python Project for Agentic Coding](https://realpython.com/python-project-for-agentic-coding/).
